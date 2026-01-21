@@ -1,0 +1,210 @@
+name: Release Management
+
+on:
+  pull_request:
+    branches: [ "main", "develop" ]
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Set version variables
+        id: version
+        run: |
+          PR_NUMBER="${{ github.event.number }}"
+
+          if [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+            # PR merged - create stable release
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            LATEST_VERSION=${LATEST_TAG#v}
+            IFS='.' read -r major minor patch <<< "$LATEST_VERSION"
+            NEW_PATCH=$((patch + 1))
+            VERSION="${major}.${minor}.${NEW_PATCH}"
+            TAG_NAME="v${VERSION}"
+            RELEASE_NAME="Release v${VERSION}"
+            IS_PRERELEASE="false"
+            echo "Creating stable release for merged PR"
+          else
+            # PR opened/updated - create/update preview release
+            VERSION="0.0.pr${PR_NUMBER}"
+            TAG_NAME="v${VERSION}"
+            RELEASE_NAME="PR #${PR_NUMBER} Preview"
+            IS_PRERELEASE="true"
+            echo "Creating/updating preview release for PR #${PR_NUMBER}"
+          fi
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "release_name=${RELEASE_NAME}" >> $GITHUB_OUTPUT
+          echo "is_prerelease=${IS_PRERELEASE}" >> $GITHUB_OUTPUT
+          echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+
+      - name: Update version in pyproject.toml
+        run: |
+          sed -i "s/^version = .*/version = \"${{ steps.version.outputs.version }}\"/" pyproject.toml
+          echo "Updated pyproject.toml to version ${{ steps.version.outputs.version }}"
+
+      - name: Delete existing PR tag/release (if exists)
+        if: github.event.action != 'closed'
+        run: |
+          # Delete tag if it exists
+          if git ls-remote --tags origin | grep -q "${{ steps.version.outputs.tag_name }}"; then
+            git push --delete origin "${{ steps.version.outputs.tag_name }}" || true
+          fi
+
+          # Delete release if it exists
+          gh release delete "${{ steps.version.outputs.tag_name }}" --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete old PR tag when merged
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true
+        run: |
+          # Delete the preview tag
+          OLD_TAG="v0.0.pr${{ steps.version.outputs.pr_number }}"
+          if git ls-remote --tags origin | grep -q "${OLD_TAG}"; then
+            git push --delete origin "${OLD_TAG}" || true
+          fi
+
+          # Delete the preview release
+          gh release delete "${OLD_TAG}" --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push tag
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Delete local tag if it exists
+          git tag -d "${{ steps.version.outputs.tag_name }}" 2>/dev/null || true
+          git tag -a "${{ steps.version.outputs.tag_name }}" -m "${{ steps.version.outputs.release_name }}"
+          git push origin "${{ steps.version.outputs.tag_name }}"
+
+      - name: Create/Update GitHub Release
+        run: |
+          COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
+          COMMIT_MESSAGE=$(git log --format=%B -n 1 $COMMIT_SHA)
+
+          if [ "${{ steps.version.outputs.is_prerelease }}" = "true" ]; then
+            BODY="## Preview Release for PR #${{ steps.version.outputs.pr_number }}
+
+          **This is a preview release that updates automatically with each commit to the PR.**
+
+          ### Latest Commit
+          - **SHA**: \`${COMMIT_SHA:0:7}\`
+          - **Message**: ${COMMIT_MESSAGE}
+
+          ### Installation
+          \`\`\`bash
+          # Install from git
+          pip install git+https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git@${{ steps.version.outputs.tag_name }}
+          \`\`\`
+
+          \`\`\`toml
+          # Add to pyproject.toml
+          spark-connect-kbase-auth = { git = \"https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git\", rev = \"${{ steps.version.outputs.tag_name }}\" }
+          \`\`\`
+
+          ---
+          *This release will be replaced with a stable version when the PR is merged.*"
+          else
+            BODY="## spark-connect-kbase-auth ${{ steps.version.outputs.tag_name }}
+
+          KBase authentication interceptor for Apache Spark Connect.
+
+          ### Installation
+          \`\`\`bash
+          # Install from git
+          pip install git+https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git@${{ steps.version.outputs.tag_name }}
+          \`\`\`
+
+          \`\`\`toml
+          # Add to pyproject.toml
+          spark-connect-kbase-auth = { git = \"https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git\", rev = \"${{ steps.version.outputs.tag_name }}\" }
+          \`\`\`
+
+          ### Features
+          - gRPC authentication interceptor for Spark Connect
+          - KBase token validation before session creation
+          - Custom ChannelBuilder with KBase auth headers
+          - Async and sync KBase auth client"
+          fi
+
+          gh release create "${{ steps.version.outputs.tag_name }}" \
+            --title "${{ steps.version.outputs.release_name }}" \
+            --notes "${BODY}" \
+            --target "${{ github.event.pull_request.head.sha }}" \
+            $([ "${{ steps.version.outputs.is_prerelease }}" = "true" ] && echo "--prerelease")
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on PR with release info
+        if: github.event.action == 'opened' || github.event.action == 'synchronize'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tagName = '${{ steps.version.outputs.tag_name }}';
+            const body = `## Preview Release Created
+
+            A preview release has been created for this PR: [\`${tagName}\`](https://github.com/${{ github.repository }}/releases/tag/${tagName})
+
+            ### Installation
+            \`\`\`bash
+            pip install git+https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git@${tagName}
+            \`\`\`
+
+            \`\`\`toml
+            # Add to pyproject.toml
+            spark-connect-kbase-auth = { git = "https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git", rev = "${tagName}" }
+            \`\`\`
+
+            This release will update automatically with each new commit to this PR.`;
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existingComment = comments.data.find(comment =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('Preview Release Created')
+            );
+
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }

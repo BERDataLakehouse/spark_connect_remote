@@ -1,0 +1,69 @@
+name: Lint and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        uv sync --extra dev
+
+    - name: Run linting
+      run: |
+        uv run ruff check .
+
+    - name: Check formatting
+      run: |
+        uv run ruff format --check .
+
+    - name: Run tests with coverage
+      run: |
+        uv run pytest tests/ -v \
+          --cov=src/spark_connect_kbase_auth \
+          --cov-report=term-missing \
+          --cov-report=xml
+
+    - name: Upload coverage reports to Codecov
+      if: matrix.python-version == '3.12'
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: BERDataLakehouse/spark_connect_kbase_auth
+        files: ./coverage.xml
+        fail_ci_if_error: false
+        verbose: true
+
+    - name: Create Coverage Comment
+      if: github.event_name == 'pull_request' && matrix.python-version == '3.12'
+      uses: py-cov-action/python-coverage-comment-action@v3
+      with:
+        GITHUB_TOKEN: ${{ github.token }}
+        MINIMUM_GREEN: 80
+        MINIMUM_ORANGE: 70
