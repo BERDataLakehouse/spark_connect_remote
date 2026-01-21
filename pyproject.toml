@@ -77,3 +77,6 @@ plugins = ["pydantic.mypy"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-v --cov=src/spark_connect_kbase_auth --cov-report=term-missing"
+
+[tool.coverage.run]
+relative_files = true

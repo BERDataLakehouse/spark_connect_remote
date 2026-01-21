@@ -10,15 +10,23 @@ This library provides helpers for authenticating Spark Connect sessions using KB
 ## Installation
 
 ```bash
-# From PyPI (when published)
-pip install spark-connect-kbase-auth
+# Install directly from GitHub
+pip install "git+https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git"
 
-# From source
+# For development (from source)
+git clone https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git
 cd spark_connect_kbase_auth
 pip install -e .
 
 # With development dependencies
 pip install -e ".[dev]"
+```
+
+### via pyproject.toml
+
+```toml
+# Add to pyproject.toml dependencies
+spark-connect-kbase-auth = { git = "https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git", rev = "main" }
 ```
 
 ## Quick Start
