@@ -6,10 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from spark_connect_kbase_auth.session import (
-    DEFAULT_HOST_TEMPLATE,
-    DEFAULT_PORT,
     ENV_KBASE_AUTH_TOKEN,
-    ENV_KBASE_AUTH_URL,
     create_authenticated_session,
     get_authenticated_spark,
 )
@@ -93,9 +90,7 @@ class TestCreateAuthenticatedSession:
             kbase_auth_url="https://custom-auth.example.com/",
         )
 
-        mock_auth_client_class.assert_called_once_with(
-            auth_url="https://custom-auth.example.com/"
-        )
+        mock_auth_client_class.assert_called_once_with(auth_url="https://custom-auth.example.com/")
 
     @patch("pyspark.sql.SparkSession")
     @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
@@ -145,9 +140,7 @@ class TestCreateAuthenticatedSession:
 
     @patch("pyspark.sql.SparkSession")
     @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
-    def test_sets_app_name(
-        self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
-    ):
+    def test_sets_app_name(self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock):
         """Test that app name is set on the session."""
         mock_client = MagicMock()
         mock_client.get_username.return_value = "alice"
@@ -187,16 +180,12 @@ class TestCreateAuthenticatedSession:
             spark_config={"spark.sql.shuffle.partitions": "200"},
         )
 
-        mock_builder.config.assert_called_once_with(
-            "spark.sql.shuffle.partitions", "200"
-        )
+        mock_builder.config.assert_called_once_with("spark.sql.shuffle.partitions", "200")
 
     @patch.dict(os.environ, {ENV_KBASE_AUTH_TOKEN: "env-token"}, clear=False)
     @patch("pyspark.sql.SparkSession")
     @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
-    def test_token_from_env(
-        self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
-    ):
+    def test_token_from_env(self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock):
         """Test token loaded from environment variable."""
         mock_client = MagicMock()
         mock_client.get_username.return_value = "alice"

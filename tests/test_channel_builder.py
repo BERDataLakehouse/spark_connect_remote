@@ -186,4 +186,3 @@ class TestCreateKBaseChannel:
         )
 
         assert channel is not None
-
