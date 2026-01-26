@@ -26,7 +26,7 @@ This library provides KBase authentication for Apache Spark Connect clients. It 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           URL Construction                                  │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ sc://spark-connect-{username}.namespace:15002/;token=<token>        │    │
+│  │ sc://spark-connect-{username}.namespace:15002/;x-kbase-token=<token>;use_ssl=false │    │
 │  └─────────────────────────────────────────────────────────────────────┘    │
 └───────────────────────────────────────────────────────────────────────────┬─┘
                                     │
