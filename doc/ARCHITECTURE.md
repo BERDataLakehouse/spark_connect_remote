@@ -35,7 +35,7 @@ This library provides KBase authentication for Apache Spark Connect clients. It 
 │                          Spark Connect Server                               │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
 │  │ KBaseAuthServerInterceptor validates token (server-side)            │    │
-│  │ - Extracts token from Authorization header                          │    │
+│  │ - Extracts token from x-kbase-token header                          │    │
 │  │ - Validates with KBase Auth2 API                                    │    │
 │  │ - Verifies user matches pod owner                                   │    │
 │  └─────────────────────────────────────────────────────────────────────┘    │
