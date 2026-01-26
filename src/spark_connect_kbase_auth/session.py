@@ -111,9 +111,15 @@ def create_authenticated_session(
         host = host_template
 
     # Build Spark Connect URL with token
-    # Format: sc://host:port/;token=<token> sends Authorization: Bearer <token> header
+    # Format: sc://host:port/;use_ssl=false;x-kbase-token=<token>
+    # We use x-kbase-token instead of 'token' to avoid PySpark auto-enabling SSL/TLS
     protocol = "scs" if use_ssl else "sc"
-    spark_connect_url = f"{protocol}://{host}:{port}/;token={kbase_token}"
+
+    # Append ;use_ssl=false if not using SSL (crucial for some environments)
+    ssl_part = ";use_ssl=false" if not use_ssl else ""
+    token_part = f";x-kbase-token={kbase_token}" if kbase_token else ""
+
+    spark_connect_url = f"{protocol}://{host}:{port}/{ssl_part}{token_part}"
 
     # Build the session
     builder = SparkSession.builder.remote(spark_connect_url)
