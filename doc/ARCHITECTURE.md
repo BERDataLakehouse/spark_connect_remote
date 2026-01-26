@@ -4,31 +4,42 @@
 
 This library provides KBase authentication for Apache Spark Connect clients. It automatically resolves the username from the KBase token to build the correct Spark Connect URL for multi-tenant environments, then passes the token via the URL for server-side validation.
 
-```mermaid
-graph TD
-    subgraph S1 [Client Application]
-        direction TB
-        C1["spark = create_authenticated_session(<br/>&nbsp;&nbsp;host_template='spark-connect-{username}.namespace',<br/>&nbsp;&nbsp;kbase_token='...',<br/>)"]
-    end
-
-    subgraph S2 [KBaseAuthClient]
-        direction TB
-        C2["Validates token with KBase Auth2 API to get username"]
-    end
-
-    subgraph S3 [URL Construction]
-        direction TB
-        C3["sc://spark-connect-{username}.namespace:15002/;<br/>x-kbase-token=&lt;token&gt;"]
-    end
-
-    subgraph S4 [Spark Connect Server]
-        direction TB
-        C4["KBaseAuthServerInterceptor validates token (server-side)<br/>- Extracts token from x-kbase-token header<br/>- Validates with KBase Auth2 API<br/>- Verifies user matches pod owner"]
-    end
-
-    S1 --> S2
-    S2 --> S3
-    S3 --> S4
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Client Application                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  spark = create_authenticated_session(                                      │
+│      host_template="spark-connect-{username}.namespace",                    │
+│      kbase_token="...",                                                     │
+│  )                                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           KBaseAuthClient                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ Validates token with KBase Auth2 API to get username                │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           URL Construction                                  │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ sc://spark-connect-{username}.namespace:15002/;x-kbase-token=<token>│    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Spark Connect Server                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ KBaseAuthServerInterceptor validates token (server-side)            │    │
+│  │ - Extracts token from x-kbase-token header                          │    │
+│  │ - Validates with KBase Auth2 API                                    │    │
+│  │ - Verifies user matches pod owner                                   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Core Components
