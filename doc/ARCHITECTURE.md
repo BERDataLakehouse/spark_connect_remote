@@ -8,10 +8,7 @@ This library provides KBase authentication for Apache Spark Connect clients. It 
 graph TD
     subgraph S1 [Client Application]
         direction TB
-        C1["spark = create_authenticated_session(
-      host_template='spark-connect-{username}.namespace',
-      kbase_token='...',
-  )"]
+        C1["spark = create_authenticated_session(<br/>&nbsp;&nbsp;host_template='spark-connect-{username}.namespace',<br/>&nbsp;&nbsp;kbase_token='...',<br/>)"]
     end
 
     subgraph S2 [KBaseAuthClient]
@@ -21,16 +18,12 @@ graph TD
 
     subgraph S3 [URL Construction]
         direction TB
-        C3["sc://spark-connect-{username}.namespace:15002/;
-x-kbase-token=&lt;token&gt;"]
+        C3["sc://spark-connect-{username}.namespace:15002/;<br/>x-kbase-token=&lt;token&gt;"]
     end
 
     subgraph S4 [Spark Connect Server]
         direction TB
-        C4["KBaseAuthServerInterceptor validates token (server-side)
-- Extracts token from x-kbase-token header
-- Validates with KBase Auth2 API
-- Verifies user matches pod owner"]
+        C4["KBaseAuthServerInterceptor validates token (server-side)<br/>- Extracts token from x-kbase-token header<br/>- Validates with KBase Auth2 API<br/>- Verifies user matches pod owner"]
     end
 
     S1 --> S2
