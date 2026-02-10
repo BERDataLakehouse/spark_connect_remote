@@ -10,7 +10,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any
 
-from spark_connect_kbase_auth.kbase_client import KBaseAuthClient
+from spark_connect_remote.kbase_client import KBaseAuthClient
 
 if TYPE_CHECKING:
     from pyspark.sql import SparkSession
@@ -29,7 +29,7 @@ DEFAULT_PORT = 15002
 DEFAULT_HOST_TEMPLATE = "spark-connect-{username}"
 
 
-def create_authenticated_session(
+def create_spark_session(
     host_template: str = DEFAULT_HOST_TEMPLATE,
     port: int = DEFAULT_PORT,
     kbase_token: str | None = None,
@@ -67,7 +67,7 @@ def create_authenticated_session(
 
     Example:
         # Automatic URL resolution from token
-        spark = create_authenticated_session(
+        spark = create_spark_session(
             host_template="spark-connect-{username}.jupyterhub-dev.svc.cluster.local",
             kbase_token="your-token",
         )
@@ -75,7 +75,7 @@ def create_authenticated_session(
         # sc://spark-connect-alice.jupyterhub-dev.svc.cluster.local:15002
 
         # With environment variables (KBASE_AUTH_TOKEN, KBASE_AUTH_URL)
-        spark = create_authenticated_session(
+        spark = create_spark_session(
             host_template="spark-connect-{username}.namespace",
         )
 
@@ -91,7 +91,9 @@ def create_authenticated_session(
             raise ValueError(
                 f"No token provided and {ENV_KBASE_AUTH_TOKEN} environment variable is not set"
             )
-        logger.debug(f"Using KBase token from {ENV_KBASE_AUTH_TOKEN} environment variable")
+        logger.debug(
+            f"Using KBase token from {ENV_KBASE_AUTH_TOKEN} environment variable"
+        )
 
     # Get auth URL from environment if not provided
     if kbase_auth_url is None:
@@ -99,7 +101,11 @@ def create_authenticated_session(
 
     # Always validate token client-side for fail-fast behavior
     # This gives immediate feedback if the token is invalid or expired
-    client = KBaseAuthClient(auth_url=kbase_auth_url) if kbase_auth_url else KBaseAuthClient()
+    client = (
+        KBaseAuthClient(auth_url=kbase_auth_url)
+        if kbase_auth_url
+        else KBaseAuthClient()
+    )
     username = client.get_username(kbase_token)
     logger.debug(f"Validated token for user '{username}'")
 
@@ -113,13 +119,12 @@ def create_authenticated_session(
     # Build Spark Connect URL with token
     # Format: sc://host:port/;use_ssl=false;x-kbase-token=<token>
     # We use x-kbase-token instead of 'token' to avoid PySpark auto-enabling SSL/TLS
-    protocol = "scs" if use_ssl else "sc"
-
-    # Append ;use_ssl=false if not using SSL (crucial for some environments)
-    ssl_part = ";use_ssl=false" if not use_ssl else ""
+    # Always use sc:// scheme — PySpark doesn't support scs://
+    # SSL is controlled via the ;use_ssl parameter
+    ssl_part = ";use_ssl=true" if use_ssl else ";use_ssl=false"
     token_part = f";x-kbase-token={kbase_token}" if kbase_token else ""
 
-    spark_connect_url = f"{protocol}://{host}:{port}/{ssl_part}{token_part}"
+    spark_connect_url = f"sc://{host}:{port}/{ssl_part}{token_part}"
 
     # Build the session
     builder = SparkSession.builder.remote(spark_connect_url)
@@ -138,7 +143,7 @@ def create_authenticated_session(
     return session
 
 
-def get_authenticated_spark(
+def get_spark_session(
     host_template: str = DEFAULT_HOST_TEMPLATE,
     kbase_token: str | None = None,
     **kwargs: Any,
@@ -146,23 +151,23 @@ def get_authenticated_spark(
     """
     Get or create an authenticated SparkSession.
 
-    This is a simple wrapper around create_authenticated_session() that
+    This is a simple wrapper around create_spark_session() that
     uses environment variables by default.
 
     Args:
         host_template: Host template with {username} placeholder.
         kbase_token: Optional KBase token (uses KBASE_AUTH_TOKEN if not provided).
-        **kwargs: Additional arguments passed to create_authenticated_session().
+        **kwargs: Additional arguments passed to create_spark_session().
 
     Returns:
         An authenticated SparkSession.
 
     Example:
-        spark = get_authenticated_spark(
+        spark = get_spark_session(
             host_template="spark-connect-{username}.namespace"
         )
     """
-    return create_authenticated_session(
+    return create_spark_session(
         host_template=host_template,
         kbase_token=kbase_token,
         **kwargs,
@@ -177,17 +182,17 @@ def create_channel_builder(
     use_ssl: bool = False,
 ) -> Any:
     """
-    Deprecated: Use create_authenticated_session() instead.
+    Deprecated: Use create_spark_session() instead.
 
     This function is kept for backward compatibility but now uses
     the simpler URL-based authentication approach internally.
     """
     import warnings
 
-    from spark_connect_kbase_auth.channel_builder import KBaseChannelBuilder
+    from spark_connect_remote.channel_builder import KBaseChannelBuilder
 
     warnings.warn(
-        "create_channel_builder is deprecated. Use create_authenticated_session() instead.",
+        "create_channel_builder is deprecated. Use create_spark_session() instead.",
         DeprecationWarning,
         stacklevel=2,
     )

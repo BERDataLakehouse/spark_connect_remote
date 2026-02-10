@@ -1,7 +1,7 @@
-# spark-connect-kbase-auth
+# spark-connect-remote
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
-[![codecov](https://codecov.io/gh/BERDataLakehouse/spark_connect_kbase_auth/branch/main/graph/badge.svg)](https://codecov.io/gh/BERDataLakehouse/spark_connect_kbase_auth)
+[![codecov](https://codecov.io/gh/BERDataLakehouse/spark_connect_remote/branch/main/graph/badge.svg)](https://codecov.io/gh/BERDataLakehouse/spark_connect_remote)
 
 KBase authentication for Apache Spark Connect.
 
@@ -11,11 +11,11 @@ This library provides helpers for authenticating Spark Connect sessions using KB
 
 ```bash
 # Install directly from GitHub
-pip install "git+https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git"
+pip install "git+https://github.com/BERDataLakehouse/spark_connect_remote.git"
 
 # For development (from source)
-git clone https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git
-cd spark_connect_kbase_auth
+git clone https://github.com/BERDataLakehouse/spark_connect_remote.git
+cd spark_connect_remote
 pip install -e .
 
 # With development dependencies
@@ -26,7 +26,7 @@ pip install -e ".[dev]"
 
 ```toml
 # Add to pyproject.toml dependencies
-spark-connect-kbase-auth = { git = "https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git", rev = "main" }
+spark-connect-remote = { git = "https://github.com/BERDataLakehouse/spark_connect_remote.git", rev = "main" }
 ```
 
 ## Quick Start
@@ -36,11 +36,11 @@ spark-connect-kbase-auth = { git = "https://github.com/BERDataLakehouse/spark_co
 The library automatically resolves the username from your KBase token to build the correct URL:
 
 ```python
-from spark_connect_kbase_auth import create_authenticated_session
+from spark_connect_remote import create_spark_session
 
 # Create an authenticated Spark session
 # The {username} placeholder is replaced with the username from the token
-spark = create_authenticated_session(
+spark = create_spark_session(
     host_template="spark-connect-{username}.jupyterhub-dev.svc.cluster.local",
     kbase_token="your-kbase-token",
 )
@@ -55,13 +55,13 @@ df.show()
 ### Using Environment Variables
 
 ```python
-from spark_connect_kbase_auth import create_authenticated_session
+from spark_connect_remote import create_spark_session
 
 # Set environment variables:
 # - KBASE_AUTH_TOKEN: Your KBase token
 # - KBASE_AUTH_URL: KBase Auth2 service URL (optional)
 
-spark = create_authenticated_session(
+spark = create_spark_session(
     host_template="spark-connect-{username}.namespace",
 )
 ```
@@ -69,9 +69,9 @@ spark = create_authenticated_session(
 ### Full Configuration
 
 ```python
-from spark_connect_kbase_auth import create_authenticated_session
+from spark_connect_remote import create_spark_session
 
-spark = create_authenticated_session(
+spark = create_spark_session(
     host_template="spark-connect-{username}.jupyterhub-dev.svc.cluster.local",
     port=15002,
     kbase_token="your-kbase-token",
@@ -89,7 +89,7 @@ spark = create_authenticated_session(
 Use `KBaseAuthClient` to validate tokens or retrieve user information:
 
 ```python
-from spark_connect_kbase_auth import KBaseAuthClient
+from spark_connect_remote import KBaseAuthClient
 
 client = KBaseAuthClient()
 
@@ -111,12 +111,12 @@ print(f"Display name: {user_info['display']}")
 
 ### Session Helpers
 
-#### `create_authenticated_session()`
+#### `create_spark_session()`
 
 Create an authenticated SparkSession with KBase authentication.
 
 ```python
-def create_authenticated_session(
+def create_spark_session(
     host_template: str = "spark-connect-{username}",
     port: int = 15002,
     kbase_token: str | None = None,
@@ -136,12 +136,12 @@ def create_authenticated_session(
 - `app_name`: Optional application name for the Spark session
 - `spark_config`: Optional dictionary of Spark configuration options
 
-#### `get_authenticated_spark()`
+#### `get_spark_session()`
 
-Convenience wrapper around `create_authenticated_session()`.
+Convenience wrapper around `create_spark_session()`.
 
 ```python
-def get_authenticated_spark(
+def get_spark_session(
     host_template: str = "spark-connect-{username}",
     kbase_token: str | None = None,
     **kwargs,

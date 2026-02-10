@@ -1,7 +1,7 @@
 [project]
-name = "spark-connect-kbase-auth"
+name = "spark-connect-remote"
 version = "0.1.0"
-description = "KBase authentication interceptor for Apache Spark Connect"
+description = "Remote connection helpers for Apache Spark Connect with KBase authentication"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
@@ -39,7 +39,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/spark_connect_kbase_auth"]
+packages = ["src/spark_connect_remote"]
 
 [tool.ruff]
 target-version = "py312"
@@ -64,7 +64,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["spark_connect_kbase_auth"]
+known-first-party = ["spark_connect_remote"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -76,7 +76,7 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "-v --cov=src/spark_connect_kbase_auth --cov-report=term-missing"
+addopts = "-v --cov=src/spark_connect_remote --cov-report=term-missing"
 
 [tool.coverage.run]
 relative_files = true

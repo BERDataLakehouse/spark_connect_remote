@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from spark_connect_kbase_auth.kbase_client import (
+from spark_connect_remote.kbase_client import (
     DEFAULT_AUTH_URL,
     KBaseAuthClient,
     KBaseAuthError,
@@ -98,7 +98,7 @@ class TestKBaseAuthClient:
         with pytest.raises(KBaseAuthError, match="Token cannot be empty"):
             client.validate_token("   ")
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_validate_token_success(self, mock_get: MagicMock):
         """Test successful token validation."""
         # Mock successful response
@@ -129,7 +129,7 @@ class TestKBaseAuthClient:
         assert "api/V2/token" in call_args[0][0]
         assert call_args[1]["headers"]["Authorization"] == "valid-token"
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_validate_token_unauthorized(self, mock_get: MagicMock):
         """Test validation fails with 401 response."""
         mock_response = MagicMock()
@@ -140,7 +140,7 @@ class TestKBaseAuthClient:
         with pytest.raises(KBaseAuthError, match="Invalid or expired token"):
             client.validate_token("invalid-token")
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_validate_token_server_error(self, mock_get: MagicMock):
         """Test validation fails with server error."""
         mock_response = MagicMock()
@@ -151,7 +151,7 @@ class TestKBaseAuthClient:
         with pytest.raises(KBaseAuthError, match="status 500"):
             client.validate_token("some-token")
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_validate_token_empty_response(self, mock_get: MagicMock):
         """Test validation fails with empty response body."""
         mock_response = MagicMock()
@@ -163,7 +163,7 @@ class TestKBaseAuthClient:
         with pytest.raises(KBaseAuthError, match="Empty response"):
             client.validate_token("some-token")
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_validate_token_timeout(self, mock_get: MagicMock):
         """Test validation fails on timeout."""
         mock_get.side_effect = httpx.TimeoutException("Connection timed out")
@@ -172,7 +172,7 @@ class TestKBaseAuthClient:
         with pytest.raises(KBaseAuthError, match="timed out"):
             client.validate_token("some-token")
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_validate_token_connection_error(self, mock_get: MagicMock):
         """Test validation fails on connection error."""
         mock_get.side_effect = httpx.ConnectError("Connection refused")
@@ -181,7 +181,7 @@ class TestKBaseAuthClient:
         with pytest.raises(KBaseAuthError, match="Failed to connect"):
             client.validate_token("some-token")
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_validate_token_missing_field(self, mock_get: MagicMock):
         """Test validation fails when required field is missing."""
         mock_response = MagicMock()
@@ -197,7 +197,7 @@ class TestKBaseAuthClient:
         with pytest.raises(KBaseAuthError, match="Missing required field"):
             client.validate_token("some-token")
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_get_username(self, mock_get: MagicMock):
         """Test get_username convenience method."""
         mock_response = MagicMock()
@@ -218,7 +218,7 @@ class TestKBaseAuthClient:
 
         assert username == "testuser"
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_get_user_info_success(self, mock_get: MagicMock):
         """Test successful user info retrieval."""
         mock_response = MagicMock()
@@ -250,7 +250,7 @@ class TestKBaseAuthClient:
         with pytest.raises(KBaseAuthError, match="Token cannot be empty"):
             client.get_user_info("")
 
-    @patch("spark_connect_kbase_auth.kbase_client.httpx.get")
+    @patch("spark_connect_remote.kbase_client.httpx.get")
     def test_get_user_info_unauthorized(self, mock_get: MagicMock):
         """Test get_user_info fails with 401 response."""
         mock_response = MagicMock()

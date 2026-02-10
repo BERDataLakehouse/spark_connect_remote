@@ -5,18 +5,18 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from spark_connect_kbase_auth.session import (
+from spark_connect_remote.session import (
     ENV_KBASE_AUTH_TOKEN,
-    create_authenticated_session,
-    get_authenticated_spark,
+    create_spark_session,
+    get_spark_session,
 )
 
 
 class TestCreateAuthenticatedSession:
-    """Tests for create_authenticated_session function."""
+    """Tests for create_spark_session function."""
 
     @patch("pyspark.sql.SparkSession")
-    @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
+    @patch("spark_connect_remote.session.KBaseAuthClient")
     def test_resolves_username_from_token(
         self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
     ):
@@ -29,7 +29,7 @@ class TestCreateAuthenticatedSession:
         mock_spark_session.builder.remote.return_value = mock_builder
         mock_builder.getOrCreate.return_value = MagicMock()
 
-        create_authenticated_session(
+        create_spark_session(
             host_template="spark-connect-{username}.namespace",
             kbase_token="test-token",
         )
@@ -44,7 +44,7 @@ class TestCreateAuthenticatedSession:
         assert "token=test-token" in url
 
     @patch("pyspark.sql.SparkSession")
-    @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
+    @patch("spark_connect_remote.session.KBaseAuthClient")
     def test_validates_token_without_username_placeholder(
         self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
     ):
@@ -57,7 +57,7 @@ class TestCreateAuthenticatedSession:
         mock_spark_session.builder.remote.return_value = mock_builder
         mock_builder.getOrCreate.return_value = MagicMock()
 
-        create_authenticated_session(
+        create_spark_session(
             host_template="fixed-host.namespace",
             kbase_token="test-token",
         )
@@ -71,7 +71,7 @@ class TestCreateAuthenticatedSession:
         assert "alice" not in url  # Username not used in host
 
     @patch("pyspark.sql.SparkSession")
-    @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
+    @patch("spark_connect_remote.session.KBaseAuthClient")
     def test_uses_custom_auth_url(
         self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
     ):
@@ -84,20 +84,22 @@ class TestCreateAuthenticatedSession:
         mock_spark_session.builder.remote.return_value = mock_builder
         mock_builder.getOrCreate.return_value = MagicMock()
 
-        create_authenticated_session(
+        create_spark_session(
             host_template="spark-connect-{username}.namespace",
             kbase_token="test-token",
             kbase_auth_url="https://custom-auth.example.com/",
         )
 
-        mock_auth_client_class.assert_called_once_with(auth_url="https://custom-auth.example.com/")
+        mock_auth_client_class.assert_called_once_with(
+            auth_url="https://custom-auth.example.com/"
+        )
 
     @patch("pyspark.sql.SparkSession")
-    @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
+    @patch("spark_connect_remote.session.KBaseAuthClient")
     def test_uses_ssl_protocol(
         self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
     ):
-        """Test that SSL uses scs:// protocol."""
+        """Test that SSL uses sc:// protocol with use_ssl parameter."""
         mock_client = MagicMock()
         mock_client.get_username.return_value = "alice"
         mock_auth_client_class.return_value = mock_client
@@ -106,17 +108,18 @@ class TestCreateAuthenticatedSession:
         mock_spark_session.builder.remote.return_value = mock_builder
         mock_builder.getOrCreate.return_value = MagicMock()
 
-        create_authenticated_session(
+        create_spark_session(
             host_template="spark-connect-{username}.namespace",
             kbase_token="test-token",
             use_ssl=True,
         )
 
         url = mock_spark_session.builder.remote.call_args[0][0]
-        assert url.startswith("scs://")
+        assert url.startswith("sc://")
+        assert "use_ssl=true" in url
 
     @patch("pyspark.sql.SparkSession")
-    @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
+    @patch("spark_connect_remote.session.KBaseAuthClient")
     def test_uses_custom_port(
         self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
     ):
@@ -129,7 +132,7 @@ class TestCreateAuthenticatedSession:
         mock_spark_session.builder.remote.return_value = mock_builder
         mock_builder.getOrCreate.return_value = MagicMock()
 
-        create_authenticated_session(
+        create_spark_session(
             host_template="spark-connect-{username}.namespace",
             kbase_token="test-token",
             port=15003,
@@ -139,8 +142,10 @@ class TestCreateAuthenticatedSession:
         assert ":15003/" in url
 
     @patch("pyspark.sql.SparkSession")
-    @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
-    def test_sets_app_name(self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock):
+    @patch("spark_connect_remote.session.KBaseAuthClient")
+    def test_sets_app_name(
+        self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
+    ):
         """Test that app name is set on the session."""
         mock_client = MagicMock()
         mock_client.get_username.return_value = "alice"
@@ -151,7 +156,7 @@ class TestCreateAuthenticatedSession:
         mock_builder.appName.return_value = mock_builder
         mock_builder.getOrCreate.return_value = MagicMock()
 
-        create_authenticated_session(
+        create_spark_session(
             host_template="spark-connect-{username}.namespace",
             kbase_token="test-token",
             app_name="TestApp",
@@ -160,7 +165,7 @@ class TestCreateAuthenticatedSession:
         mock_builder.appName.assert_called_once_with("TestApp")
 
     @patch("pyspark.sql.SparkSession")
-    @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
+    @patch("spark_connect_remote.session.KBaseAuthClient")
     def test_sets_spark_config(
         self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
     ):
@@ -174,18 +179,22 @@ class TestCreateAuthenticatedSession:
         mock_builder.config.return_value = mock_builder
         mock_builder.getOrCreate.return_value = MagicMock()
 
-        create_authenticated_session(
+        create_spark_session(
             host_template="spark-connect-{username}.namespace",
             kbase_token="test-token",
             spark_config={"spark.sql.shuffle.partitions": "200"},
         )
 
-        mock_builder.config.assert_called_once_with("spark.sql.shuffle.partitions", "200")
+        mock_builder.config.assert_called_once_with(
+            "spark.sql.shuffle.partitions", "200"
+        )
 
     @patch.dict(os.environ, {ENV_KBASE_AUTH_TOKEN: "env-token"}, clear=False)
     @patch("pyspark.sql.SparkSession")
-    @patch("spark_connect_kbase_auth.session.KBaseAuthClient")
-    def test_token_from_env(self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock):
+    @patch("spark_connect_remote.session.KBaseAuthClient")
+    def test_token_from_env(
+        self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
+    ):
         """Test token loaded from environment variable."""
         mock_client = MagicMock()
         mock_client.get_username.return_value = "alice"
@@ -195,7 +204,7 @@ class TestCreateAuthenticatedSession:
         mock_spark_session.builder.remote.return_value = mock_builder
         mock_builder.getOrCreate.return_value = MagicMock()
 
-        create_authenticated_session(
+        create_spark_session(
             host_template="spark-connect-{username}.namespace",
         )
 
@@ -211,7 +220,7 @@ class TestCreateAuthenticatedSession:
 
         with patch.dict(os.environ, env, clear=True):
             with pytest.raises(ValueError) as exc_info:
-                create_authenticated_session(
+                create_spark_session(
                     host_template="spark-connect-{username}.namespace",
                 )
 
@@ -219,15 +228,15 @@ class TestCreateAuthenticatedSession:
 
 
 class TestGetAuthenticatedSpark:
-    """Tests for get_authenticated_spark function."""
+    """Tests for get_spark_session function."""
 
-    @patch("spark_connect_kbase_auth.session.create_authenticated_session")
-    def test_delegates_to_create_authenticated_session(self, mock_create: MagicMock):
-        """Test that get_authenticated_spark delegates to create_authenticated_session."""
+    @patch("spark_connect_remote.session.create_spark_session")
+    def test_delegates_to_create_spark_session(self, mock_create: MagicMock):
+        """Test that get_spark_session delegates to create_spark_session."""
         mock_session = MagicMock()
         mock_create.return_value = mock_session
 
-        result = get_authenticated_spark(
+        result = get_spark_session(
             host_template="spark-connect-{username}.namespace",
             kbase_token="test-token",
             port=15003,
@@ -246,9 +255,11 @@ class TestDeprecatedCreateChannelBuilder:
 
     def test_emits_deprecation_warning(self):
         """Test that create_channel_builder emits deprecation warning."""
-        from spark_connect_kbase_auth.session import create_channel_builder
+        from spark_connect_remote.session import create_channel_builder
 
-        with pytest.warns(DeprecationWarning, match="create_channel_builder is deprecated"):
+        with pytest.warns(
+            DeprecationWarning, match="create_channel_builder is deprecated"
+        ):
             create_channel_builder(
                 host="spark-server",
                 kbase_token="test-token",

@@ -1,4 +1,4 @@
-# spark-connect-kbase-auth Architecture
+# spark-connect-remote Architecture
 
 ## Overview
 
@@ -8,7 +8,7 @@ This library provides KBase authentication for Apache Spark Connect clients. It 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              Client Application                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  spark = create_authenticated_session(                                      │
+│  spark = create_spark_session(                                      │
 │      host_template="spark-connect-{username}.namespace",                    │
 │      kbase_token="...",                                                     │
 │  )                                                                          │
@@ -52,8 +52,8 @@ The main entry point for creating authenticated Spark Connect sessions.
 
 | Function | Purpose |
 |----------|---------|
-| `create_authenticated_session()` | Create a full SparkSession with auth configured |
-| `get_authenticated_spark()` | Shorthand wrapper around `create_authenticated_session()` |
+| `create_spark_session()` | Create a full SparkSession with auth configured |
+| `get_spark_session()` | Shorthand wrapper around `create_spark_session()` |
 
 **Key Features:**
 - Automatically resolves `{username}` placeholder in host template
@@ -83,7 +83,7 @@ HTTP client for the KBase Auth2 REST API. Used to validate tokens and retrieve u
 ## Authentication Flow
 
 ```
-1. User calls create_authenticated_session()
+1. User calls create_spark_session()
    └── host_template="spark-connect-{username}.namespace", kbase_token="..."
 
 2. Library ALWAYS validates token with KBase Auth2 (fail-fast)

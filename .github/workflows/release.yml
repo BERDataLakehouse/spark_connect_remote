@@ -116,30 +116,30 @@ jobs:
           ### Installation
           \`\`\`bash
           # Install from git
-          pip install git+https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git@${{ steps.version.outputs.tag_name }}
+          pip install git+https://github.com/BERDataLakehouse/spark_connect_remote.git@${{ steps.version.outputs.tag_name }}
           \`\`\`
 
           \`\`\`toml
           # Add to pyproject.toml
-          spark-connect-kbase-auth = { git = \"https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git\", rev = \"${{ steps.version.outputs.tag_name }}\" }
+          spark-connect-remote = { git = \"https://github.com/BERDataLakehouse/spark_connect_remote.git\", rev = \"${{ steps.version.outputs.tag_name }}\" }
           \`\`\`
 
           ---
           *This release will be replaced with a stable version when the PR is merged.*"
           else
-            BODY="## spark-connect-kbase-auth ${{ steps.version.outputs.tag_name }}
+            BODY="## spark-connect-remote ${{ steps.version.outputs.tag_name }}
 
           KBase authentication interceptor for Apache Spark Connect.
 
           ### Installation
           \`\`\`bash
           # Install from git
-          pip install git+https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git@${{ steps.version.outputs.tag_name }}
+          pip install git+https://github.com/BERDataLakehouse/spark_connect_remote.git@${{ steps.version.outputs.tag_name }}
           \`\`\`
 
           \`\`\`toml
           # Add to pyproject.toml
-          spark-connect-kbase-auth = { git = \"https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git\", rev = \"${{ steps.version.outputs.tag_name }}\" }
+          spark-connect-remote = { git = \"https://github.com/BERDataLakehouse/spark_connect_remote.git\", rev = \"${{ steps.version.outputs.tag_name }}\" }
           \`\`\`
 
           ### Features
@@ -169,12 +169,12 @@ jobs:
 
             ### Installation
             \`\`\`bash
-            pip install git+https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git@${tagName}
+            pip install git+https://github.com/BERDataLakehouse/spark_connect_remote.git@${tagName}
             \`\`\`
 
             \`\`\`toml
             # Add to pyproject.toml
-            spark-connect-kbase-auth = { git = "https://github.com/BERDataLakehouse/spark_connect_kbase_auth.git", rev = "${tagName}" }
+            spark-connect-remote = { git = "https://github.com/BERDataLakehouse/spark_connect_remote.git", rev = "${tagName}" }
             \`\`\`
 
             This release will update automatically with each new commit to this PR.`;

@@ -7,11 +7,11 @@ from the token to build the correct Spark Connect URL.
 
 Example usage:
 
-    from spark_connect_kbase_auth import create_authenticated_session
+    from spark_connect_remote import create_spark_session
 
     # Create an authenticated Spark session
     # The {username} placeholder is replaced with the username from the token
-    spark = create_authenticated_session(
+    spark = create_spark_session(
         host_template="spark-connect-{username}.jupyterhub-dev.svc.cluster.local",
         kbase_token="your-kbase-token",  # Optional if KBASE_AUTH_TOKEN is set
     )
@@ -23,7 +23,7 @@ Example usage:
 
 For client-side token validation (e.g., to get user info):
 
-    from spark_connect_kbase_auth import KBaseAuthClient
+    from spark_connect_remote import KBaseAuthClient
 
     client = KBaseAuthClient()
     token_info = client.validate_token("your-token")
@@ -31,14 +31,14 @@ For client-side token validation (e.g., to get user info):
     print(f"Expires: {token_info.expires}")
 """
 
-from spark_connect_kbase_auth.kbase_client import (
+from spark_connect_remote.kbase_client import (
     KBaseAuthClient,
     KBaseAuthError,
     KBaseTokenInfo,
 )
-from spark_connect_kbase_auth.session import (
-    create_authenticated_session,
-    get_authenticated_spark,
+from spark_connect_remote.session import (
+    create_spark_session,
+    get_spark_session,
 )
 
 __version__ = "0.2.0"
@@ -49,8 +49,8 @@ __all__ = [
     "KBaseAuthError",
     "KBaseTokenInfo",
     # Session Helpers
-    "create_authenticated_session",
-    "get_authenticated_spark",
+    "create_spark_session",
+    "get_spark_session",
 ]
 
 
@@ -60,10 +60,10 @@ def __getattr__(name: str):
     if name == "KBaseChannelBuilder":
         import warnings
 
-        from spark_connect_kbase_auth.channel_builder import KBaseChannelBuilder
+        from spark_connect_remote.channel_builder import KBaseChannelBuilder
 
         warnings.warn(
-            "KBaseChannelBuilder is deprecated. Use create_authenticated_session() instead.",
+            "KBaseChannelBuilder is deprecated. Use create_spark_session() instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -71,10 +71,10 @@ def __getattr__(name: str):
     if name == "KBaseAuthInterceptor":
         import warnings
 
-        from spark_connect_kbase_auth.interceptors import KBaseAuthInterceptor
+        from spark_connect_remote.interceptors import KBaseAuthInterceptor
 
         warnings.warn(
-            "KBaseAuthInterceptor is deprecated. Use create_authenticated_session() instead.",
+            "KBaseAuthInterceptor is deprecated. Use create_spark_session() instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -82,10 +82,10 @@ def __getattr__(name: str):
     if name == "KBaseAuthMetadata":
         import warnings
 
-        from spark_connect_kbase_auth.interceptors import KBaseAuthMetadata
+        from spark_connect_remote.interceptors import KBaseAuthMetadata
 
         warnings.warn(
-            "KBaseAuthMetadata is deprecated. Use create_authenticated_session() instead.",
+            "KBaseAuthMetadata is deprecated. Use create_spark_session() instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -93,10 +93,10 @@ def __getattr__(name: str):
     if name == "create_channel_builder":
         import warnings
 
-        from spark_connect_kbase_auth.session import create_channel_builder
+        from spark_connect_remote.session import create_channel_builder
 
         warnings.warn(
-            "create_channel_builder is deprecated. Use create_authenticated_session() instead.",
+            "create_channel_builder is deprecated. Use create_spark_session() instead.",
             DeprecationWarning,
             stacklevel=2,
         )

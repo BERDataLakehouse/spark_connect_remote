@@ -14,7 +14,7 @@ from typing import Any
 import grpc
 from pyspark.sql.connect.client.core import ChannelBuilder
 
-from spark_connect_kbase_auth.interceptors import KBaseAuthInterceptor
+from spark_connect_remote.interceptors import KBaseAuthInterceptor
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +210,7 @@ class KBaseChannelBuilder(ChannelBuilder):
     @property
     def userAgent(self) -> str:
         """Get the user agent string."""
-        return self._params.get(self.PARAM_USER_AGENT, "spark-connect-kbase-auth")
+        return self._params.get(self.PARAM_USER_AGENT, "spark-connect-remote")
 
     @property
     def sessionId(self) -> str | None:

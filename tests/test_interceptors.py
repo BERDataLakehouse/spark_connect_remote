@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock
 
-from spark_connect_kbase_auth.interceptors import (
+from spark_connect_remote.interceptors import (
     AUTHORIZATION_METADATA_KEY,
     KBASE_TOKEN_METADATA_KEY,
     KBaseAuthInterceptor,

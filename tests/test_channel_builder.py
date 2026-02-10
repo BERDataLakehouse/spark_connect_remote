@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import grpc
 
-from spark_connect_kbase_auth.channel_builder import (
+from spark_connect_remote.channel_builder import (
     KBaseChannelBuilder,
     create_kbase_channel,
 )
@@ -13,7 +13,7 @@ from spark_connect_kbase_auth.channel_builder import (
 class TestKBaseChannelBuilder:
     """Tests for KBaseChannelBuilder."""
 
-    @patch("spark_connect_kbase_auth.channel_builder.KBaseAuthInterceptor")
+    @patch("spark_connect_remote.channel_builder.KBaseAuthInterceptor")
     def test_init_basic(self, mock_interceptor_class: MagicMock):
         """Test basic initialization."""
         builder = KBaseChannelBuilder(
@@ -128,7 +128,7 @@ class TestKBaseChannelBuilder:
         builder = KBaseChannelBuilder(host="spark-server")
 
         # Default user agent
-        assert "spark-connect-kbase-auth" in builder.userAgent
+        assert "spark-connect-remote" in builder.userAgent
 
         # Custom user agent
         builder.set("user_agent", "MyApp/1.0")
@@ -156,7 +156,7 @@ class TestKBaseChannelBuilder:
 class TestCreateKBaseChannel:
     """Tests for create_kbase_channel function."""
 
-    @patch("spark_connect_kbase_auth.channel_builder.KBaseAuthInterceptor")
+    @patch("spark_connect_remote.channel_builder.KBaseAuthInterceptor")
     def test_create_channel(self, mock_interceptor_class: MagicMock):
         """Test creating channel via convenience function."""
         # Make mock properly implement gRPC interceptor interface
@@ -172,7 +172,7 @@ class TestCreateKBaseChannel:
         assert channel is not None
         mock_interceptor_class.assert_called_once()
 
-    @patch("spark_connect_kbase_auth.channel_builder.KBaseAuthInterceptor")
+    @patch("spark_connect_remote.channel_builder.KBaseAuthInterceptor")
     def test_create_channel_with_ssl(self, mock_interceptor_class: MagicMock):
         """Test creating SSL channel via convenience function."""
         mock_interceptor = MagicMock(spec=grpc.UnaryStreamClientInterceptor)

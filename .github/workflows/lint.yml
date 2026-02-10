@@ -46,7 +46,7 @@ jobs:
     - name: Run tests with coverage
       run: |
         uv run pytest tests/ -v \
-          --cov=src/spark_connect_kbase_auth \
+          --cov=src/spark_connect_remote \
           --cov-report=term-missing \
           --cov-report=xml
 
@@ -55,7 +55,7 @@ jobs:
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        slug: BERDataLakehouse/spark_connect_kbase_auth
+        slug: BERDataLakehouse/spark_connect_remote
         files: ./coverage.xml
         fail_ci_if_error: false
         verbose: true
