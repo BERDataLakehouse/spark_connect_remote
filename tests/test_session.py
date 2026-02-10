@@ -90,9 +90,7 @@ class TestCreateAuthenticatedSession:
             kbase_auth_url="https://custom-auth.example.com/",
         )
 
-        mock_auth_client_class.assert_called_once_with(
-            auth_url="https://custom-auth.example.com/"
-        )
+        mock_auth_client_class.assert_called_once_with(auth_url="https://custom-auth.example.com/")
 
     @patch("pyspark.sql.SparkSession")
     @patch("spark_connect_remote.session.KBaseAuthClient")
@@ -143,9 +141,7 @@ class TestCreateAuthenticatedSession:
 
     @patch("pyspark.sql.SparkSession")
     @patch("spark_connect_remote.session.KBaseAuthClient")
-    def test_sets_app_name(
-        self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
-    ):
+    def test_sets_app_name(self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock):
         """Test that app name is set on the session."""
         mock_client = MagicMock()
         mock_client.get_username.return_value = "alice"
@@ -185,16 +181,12 @@ class TestCreateAuthenticatedSession:
             spark_config={"spark.sql.shuffle.partitions": "200"},
         )
 
-        mock_builder.config.assert_called_once_with(
-            "spark.sql.shuffle.partitions", "200"
-        )
+        mock_builder.config.assert_called_once_with("spark.sql.shuffle.partitions", "200")
 
     @patch.dict(os.environ, {ENV_KBASE_AUTH_TOKEN: "env-token"}, clear=False)
     @patch("pyspark.sql.SparkSession")
     @patch("spark_connect_remote.session.KBaseAuthClient")
-    def test_token_from_env(
-        self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock
-    ):
+    def test_token_from_env(self, mock_auth_client_class: MagicMock, mock_spark_session: MagicMock):
         """Test token loaded from environment variable."""
         mock_client = MagicMock()
         mock_client.get_username.return_value = "alice"
@@ -257,9 +249,7 @@ class TestDeprecatedCreateChannelBuilder:
         """Test that create_channel_builder emits deprecation warning."""
         from spark_connect_remote.session import create_channel_builder
 
-        with pytest.warns(
-            DeprecationWarning, match="create_channel_builder is deprecated"
-        ):
+        with pytest.warns(DeprecationWarning, match="create_channel_builder is deprecated"):
             create_channel_builder(
                 host="spark-server",
                 kbase_token="test-token",

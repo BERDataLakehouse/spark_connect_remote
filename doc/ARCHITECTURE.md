@@ -131,3 +131,4 @@ HTTP client for the KBase Auth2 REST API. Used to validate tokens and retrieve u
 4. **Token Expiry** - Tokens are checked for expiration during server-side validation
 5. **No Token Storage** - Tokens are held in memory only, never persisted
 6. **URL Token Passing** - Token is passed via `x-kbase-token` URL parameter, which Spark Connect sends as a custom metadata header
+
