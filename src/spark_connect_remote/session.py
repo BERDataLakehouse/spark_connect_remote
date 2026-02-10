@@ -91,9 +91,7 @@ def create_spark_session(
             raise ValueError(
                 f"No token provided and {ENV_KBASE_AUTH_TOKEN} environment variable is not set"
             )
-        logger.debug(
-            f"Using KBase token from {ENV_KBASE_AUTH_TOKEN} environment variable"
-        )
+        logger.debug(f"Using KBase token from {ENV_KBASE_AUTH_TOKEN} environment variable")
 
     # Get auth URL from environment if not provided
     if kbase_auth_url is None:
@@ -101,11 +99,7 @@ def create_spark_session(
 
     # Always validate token client-side for fail-fast behavior
     # This gives immediate feedback if the token is invalid or expired
-    client = (
-        KBaseAuthClient(auth_url=kbase_auth_url)
-        if kbase_auth_url
-        else KBaseAuthClient()
-    )
+    client = KBaseAuthClient(auth_url=kbase_auth_url) if kbase_auth_url else KBaseAuthClient()
     username = client.get_username(kbase_token)
     logger.debug(f"Validated token for user '{username}'")
 
