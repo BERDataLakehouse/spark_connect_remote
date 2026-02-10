@@ -1,7 +1,7 @@
 # spark-connect-remote
 
-[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
-[![codecov](https://codecov.io/gh/BERDataLakehouse/spark_connect_remote/branch/main/graph/badge.svg)](https://codecov.io/gh/BERDataLakehouse/spark_connect_remote)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
+[![codecov](https://codecov.io/github/BERDataLakehouse/spark_connect_remote/graph/badge.svg)](https://codecov.io/github/BERDataLakehouse/spark_connect_remote)
 
 KBase authentication for Apache Spark Connect.
 

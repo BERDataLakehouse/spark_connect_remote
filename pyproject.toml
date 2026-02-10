@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Remote connection helpers for Apache Spark Connect with KBase authentication"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 authors = [{ name = "BERDL Team" }]
 keywords = ["spark", "spark-connect", "kbase", "authentication", "grpc"]
 classifiers = [
@@ -12,7 +12,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -42,7 +41,7 @@ build-backend = "hatchling.build"
 packages = ["src/spark_connect_remote"]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 line-length = 100
 src = ["src", "tests"]
 
@@ -67,7 +66,7 @@ ignore = [
 known-first-party = ["spark_connect_remote"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
