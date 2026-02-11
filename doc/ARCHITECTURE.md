@@ -4,131 +4,70 @@
 
 This library provides KBase authentication for Apache Spark Connect clients. It automatically resolves the username from the KBase token to build the correct Spark Connect URL for multi-tenant environments, then passes the token via the URL for server-side validation.
 
+### Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              Client Application                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  spark = create_spark_session(                                      │
-│      host_template="spark-connect-{username}.namespace",                    │
-│      kbase_token="...",                                                     │
-│  )                                                                          │
+│  spark = create_spark_session()                                             │
+│      (Defaults to spark.berdl.kbase.us:443)                               │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           KBaseAuthClient                                   │
+│                             K8s Ingress (Nginx)                             │
+│  https://spark.berdl.kbase.us:443                                         │
+│  Terminates TLS, routes to Service                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Spark Connect Proxy (Service)                       │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ Validates token with KBase Auth2 API to get username                │    │
+│  │ Async gRPC Interceptor                                              │    │
+│  │ 1. Extracts `x-kbase-token` metadata                                │    │
+│  │ 2. Validates token via KBase Auth2 (Async, Non-Blocking)            │    │
+│  │ 3. Resolves Username -> Backend Pod (spark-connect-{username})      │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                   │                                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ Channel Pool (LRU)                                                  │    │
+│  │ Manages connection to backend pods                                  │    │
 │  └─────────────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           URL Construction                                  │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ sc://spark-connect-{username}.namespace:15002/;x-kbase-token=<token>│    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          Spark Connect Server                               │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ KBaseAuthServerInterceptor validates token (server-side)            │    │
-│  │ - Extracts token from x-kbase-token header                          │    │
-│  │ - Validates with KBase Auth2 API                                    │    │
-│  │ - Verifies user matches pod owner                                   │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
+│                       User's Spark Connect Server Pod                       │
+│  (spark-connect-{username})                                                 │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Core Components
 
-### 1. Session Helpers
-
-**File:** `session.py`
-
-The main entry point for creating authenticated Spark Connect sessions.
-
-| Function | Purpose |
-|----------|---------|
-| `create_spark_session()` | Create a full SparkSession with auth configured |
-| `get_spark_session()` | Shorthand wrapper around `create_spark_session()` |
+### 1. Spark Connect Proxy
+The central component that creates a unified entry point (`spark.berdl.kbase.us`) for all users. It handles authentication and routing, ensuring users are securely connected to their personal Spark driver pods without exposing individual pods publicly.
 
 **Key Features:**
-- Automatically resolves `{username}` placeholder in host template
-- Builds Spark Connect URL with token: `sc://host:port/;token=<token>`
-- Supports environment variables for token and auth URL
+- **Async Authentication:** Validates KBase tokens without blocking the event loop.
+- **Dynamic Routing:** Routes requests based on the authenticated username.
+- **Connection Pooling:** Manages LRU channel pool to backend pods.
+- **Health Checks:** Exposes gRPC health check and stats endpoint.
 
----
+### 2. Session Helpers (`session.py`)
+Client-side library to easily create authenticated sessions.
+- **Default Host:** `spark.berdl.kbase.us`
+- **Default Port:** `443` (Ingress)
+- **Default Auth:** `https://kbase.us/services/auth/` (Prod)
+- **Zero Config:** `spark = create_spark_session()` just works.
 
-### 2. KBaseAuthClient
+### 3. KBase Auth Integration
+- **Client:** `KBaseAuthClient` (Async via `httpx`)
+- **Server:** Async interceptor in Proxy matches token -> user.
 
-**File:** `kbase_client.py`
-
-HTTP client for the KBase Auth2 REST API. Used to validate tokens and retrieve user information.
-
-**Responsibilities:**
-- Validate tokens via `/api/V2/token` endpoint
-- Get username from token (for URL construction)
-- Get user info (display name, roles, etc.)
-- Return structured `KBaseTokenInfo` objects
-
-**Error Handling:**
-- `KBaseAuthError` - Exception for auth errors
-- Raises on invalid tokens, expired tokens, or network errors
-
----
-
-## Authentication Flow
-
-```
-1. User calls create_spark_session()
-   └── host_template="spark-connect-{username}.namespace", kbase_token="..."
-
-2. Library ALWAYS validates token with KBase Auth2 (fail-fast)
-   └── KBaseAuthClient.get_username(token) → "alice"
-   └── Invalid/expired tokens fail immediately with KBaseAuthError
-
-3. URL is constructed (with resolved username if {username} in template)
-   └── sc://spark-connect-alice.namespace:15002/;use_ssl=false;x-kbase-token=<token>
-
-4. SparkSession connects to server
-   └── Token sent as 'x-kbase-token' metadata header
-   └── (We avoid standard 'token' param to prevent PySpark auto-SSL upgrade)
-
-5. Server-side validation (KBaseAuthServerInterceptor)
-   ├── Extracts token from 'x-kbase-token' header
-   ├── Validates token with KBase Auth2 service
-   ├── Extracts username from validation response
-   └── Verifies user matches pod owner (USER env var)
-
-6. Connection established or rejected
-```
-
-## Configuration Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `host_template` | `"spark-connect-{username}"` | Host template with `{username}` placeholder |
-| `port` | `15002` | Spark Connect server port |
-| `kbase_token` | `None` | KBase authentication token (falls back to env var) |
-| `kbase_auth_url` | `None` | KBase Auth2 service URL (falls back to env var) |
-| `use_ssl` | `False` | Enable SSL/TLS for connection (`scs://` protocol) |
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `KBASE_AUTH_TOKEN` | Default token if not provided explicitly |
-| `KBASE_AUTH_URL` | Override default Auth2 service URL |
-
-## Security Considerations
-
-1. **Server-Side Validation** - All token validation is performed server-side by `KBaseAuthServerInterceptor`
-2. **User Isolation** - Server verifies token username matches pod owner
-3. **SSL/TLS** - Use `use_ssl=True` for production deployments
-4. **Token Expiry** - Tokens are checked for expiration during server-side validation
-5. **No Token Storage** - Tokens are held in memory only, never persisted
-6. **URL Token Passing** - Token is passed via `x-kbase-token` URL parameter, which Spark Connect sends as a custom metadata header
-
+## Security
+1.  **TLS Termination:** Handled by Ingress.
+2.  **Token Auth:** Mandatory KBase token for every request.
+3.  **User Isolation:** Users can ONLY access their own pod (routed by username).
+4.  **No Direct Pod Access:** User pods are cluster-internal; only Proxy is exposed.

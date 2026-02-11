@@ -3,40 +3,31 @@
 [![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![codecov](https://codecov.io/github/BERDataLakehouse/spark_connect_remote/graph/badge.svg)](https://codecov.io/github/BERDataLakehouse/spark_connect_remote)
 
-KBase authentication for Apache Spark Connect.
+**The official Python client for connecting to the BERDL Spark Cluster.**
 
-This library provides helpers for authenticating Spark Connect sessions using KBase authentication tokens. It automatically resolves the username from the token to build the correct Spark Connect URL for multi-tenant environments.
+This library provides a secure, zero-configuration connection to your personal Spark session on the BERDL JupyterHub. It handles:
+- **KBase Authentication**: Automatically validates your token.
+- **Secure Tunneling**: Connects via TLS (HTTPS) to the cluster Ingress.
+- **Smart Routing**: Routes your session to your personal Spark driver pod.
 
 ## Installation
 
 ```bash
-# Install directly from GitHub
-pip install "git+https://github.com/BERDataLakehouse/spark_connect_remote.git"
-
-# Or using uv
 uv pip install "git+https://github.com/BERDataLakehouse/spark_connect_remote.git"
-
-# For development (from source)
-git clone https://github.com/BERDataLakehouse/spark_connect_remote.git
-cd spark_connect_remote
-uv sync --dev
 ```
 
-### via pyproject.toml
-
-```toml
-# Add to pyproject.toml dependencies
-spark-connect-remote = { git = "https://github.com/BERDataLakehouse/spark_connect_remote.git", rev = "main" }
-```
-
-## Quick Start
+## Usage
 
 ### BERDL JupyterHub Connection (Remote)
 
 To connect to your personal Spark cluster running on BERDL JupyterHub from a local machine or external service:
 
-1. **Login to BERDL JupyterHub**: Ensure you are logged in at [https://hub.berdl.kbase.us/](https://hub.berdl.kbase.us/).
-2. **Start a Notebook**: You **must** have at least one notebook server running. This automatically starts your personal Spark Connect service.
+1. Log in to [BERDL JupyterHub](https://hub.berdl.kbase.us/).
+2. **Ensure you have opened a notebook.** Open any notebook in JupyterLab. This automatically starts your personal Spark Connect service.
+
+> [!WARNING]
+> **Session Timeout**: Your BERDL JupyterHub session will automatically terminate after a certain period of inactivity. If you cannot connect to your personal Spark Connect server, please log in again to restart your notebook server.
+
 3. **Get your Token**: In your BERDL notebook, run this cell to print your token:
 
    ```python
@@ -48,11 +39,8 @@ To connect to your personal Spark cluster running on BERDL JupyterHub from a loc
    ```python
    from spark_connect_remote import create_spark_session
 
-   # Connect via the public proxy (routes to your personal cluster)
+   # Connect via the public proxy (routes to your personal spark cluster)
    spark = create_spark_session(
-       host_template="spark.berdl.kbase.us",
-       port=443,
-       use_ssl=True,
        kbase_token="PASTE_YOUR_TOKEN_HERE",
    )
 
@@ -60,14 +48,25 @@ To connect to your personal Spark cluster running on BERDL JupyterHub from a loc
    spark.sql("SHOW DATABASES").show()
    ```
 
-## Authentication Flow
+### Manual Configuration
 
-1. **Client Connects**: The client connects to `spark.berdl.kbase.us:443` with the KBase token.
-2. **Proxy Validation**: The internal proxy (`spark-connect-proxy`) validates the token with KBase Auth2 service.
-3. **Routing**: If valid, the proxy resolves the user's username and routes the connection to their personal Spark Connect service (`jupyter-{username}`).
-4. **Backend Verification**: The backend Spark Connect service verifies the token matches the pod owner.
+For local development (e.g., via `kubectl port-forward`):
 
-## Development
+```python
+spark = create_spark_session(
+    host_template="localhost",
+    port=15002,
+    use_ssl=False,
+    kbase_token="...",
+    kbase_auth_url="https://ci.kbase.us/services/auth/", # Optional: Override auth service
+)
+```
+
+## Architecture
+
+The client connects to the **Spark Connect Proxy** via the cluster Ingress (`spark.berdl.kbase.us:443`). The proxy authenticates the request using the KBase Auth2 service and routes it to the user's specific Spark driver pod.
+
+## development
 
 ```bash
 # Install dev dependencies

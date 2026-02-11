@@ -240,17 +240,3 @@ class TestGetAuthenticatedSpark:
             kbase_token="test-token",
             port=15003,
         )
-
-
-class TestDeprecatedCreateChannelBuilder:
-    """Tests for deprecated create_channel_builder function."""
-
-    def test_emits_deprecation_warning(self):
-        """Test that create_channel_builder emits deprecation warning."""
-        from spark_connect_remote.session import create_channel_builder
-
-        with pytest.warns(DeprecationWarning, match="create_channel_builder is deprecated"):
-            create_channel_builder(
-                host="spark-server",
-                kbase_token="test-token",
-            )

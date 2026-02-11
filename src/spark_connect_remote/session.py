@@ -23,10 +23,16 @@ ENV_KBASE_AUTH_TOKEN = "KBASE_AUTH_TOKEN"
 ENV_KBASE_AUTH_URL = "KBASE_AUTH_URL"
 
 # Default Spark Connect port
-DEFAULT_PORT = 15002
+# Default to 443 for production Ingress (spark.berdl.kbase.us).
+# Use 15002 if connecting via kubectl port-forward or internal service.
+DEFAULT_PORT = 443
 
-# Default host template - {username} will be replaced with the actual username
-DEFAULT_HOST_TEMPLATE = "spark-connect-{username}"
+# Default host template - {username} will be replaced (optional)
+# Default to production Ingress domain.
+DEFAULT_HOST_TEMPLATE = "spark.berdl.kbase.us"
+
+# Default KBase Auth2 URL
+DEFAULT_AUTH_URL = "https://kbase.us/services/auth/"
 
 
 def create_spark_session(
@@ -34,7 +40,7 @@ def create_spark_session(
     port: int = DEFAULT_PORT,
     kbase_token: str | None = None,
     kbase_auth_url: str | None = None,
-    use_ssl: bool = False,
+    use_ssl: bool = True,
     app_name: str | None = None,
     spark_config: dict[str, Any] | None = None,
 ) -> "SparkSession":
@@ -49,9 +55,12 @@ def create_spark_session(
         host_template: Host template with {username} placeholder.
             Example: "spark-connect-{username}.jupyterhub.svc.cluster.local"
             If no {username} placeholder, the host is used as-is.
-        port: Spark Connect server port (default: 15002).
+        port: Spark Connect server port (default: 443).
         kbase_token: KBase auth token. Falls back to KBASE_AUTH_TOKEN env var.
-        kbase_auth_url: KBase Auth2 service URL. Falls back to KBASE_AUTH_URL env var.
+        kbase_auth_url: KBase Auth2 service URL. Fallback order:
+            1. Argument (if provided)
+            2. KBASE_AUTH_URL env var
+            3. Default: https://kbase.us/services/auth/
         use_ssl: Whether to use SSL/TLS for the connection.
         app_name: Optional application name for the Spark session.
         spark_config: Optional dictionary of Spark configuration options.
@@ -95,11 +104,11 @@ def create_spark_session(
 
     # Get auth URL from environment if not provided
     if kbase_auth_url is None:
-        kbase_auth_url = os.environ.get(ENV_KBASE_AUTH_URL)
+        kbase_auth_url = os.environ.get(ENV_KBASE_AUTH_URL, DEFAULT_AUTH_URL)
 
     # Always validate token client-side for fail-fast behavior
     # This gives immediate feedback if the token is invalid or expired
-    client = KBaseAuthClient(auth_url=kbase_auth_url) if kbase_auth_url else KBaseAuthClient()
+    client = KBaseAuthClient(auth_url=kbase_auth_url)
     username = client.get_username(kbase_token)
     logger.debug(f"Validated token for user '{username}'")
 
@@ -165,38 +174,4 @@ def get_spark_session(
         host_template=host_template,
         kbase_token=kbase_token,
         **kwargs,
-    )
-
-
-# Keep old function signature for backward compatibility
-def create_channel_builder(
-    host: str,
-    port: int = DEFAULT_PORT,
-    kbase_token: str | None = None,
-    use_ssl: bool = False,
-) -> Any:
-    """
-    Deprecated: Use create_spark_session() instead.
-
-    This function is kept for backward compatibility but now uses
-    the simpler URL-based authentication approach internally.
-    """
-    import warnings
-
-    from spark_connect_remote.channel_builder import KBaseChannelBuilder
-
-    warnings.warn(
-        "create_channel_builder is deprecated. Use create_spark_session() instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    if kbase_token is None:
-        kbase_token = os.environ.get(ENV_KBASE_AUTH_TOKEN, "")
-
-    return KBaseChannelBuilder(
-        host=host,
-        port=port,
-        kbase_token=kbase_token,
-        use_ssl=use_ssl,
     )
