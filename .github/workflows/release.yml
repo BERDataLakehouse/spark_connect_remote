@@ -143,10 +143,10 @@ jobs:
           \`\`\`
 
           ### Features
-          - gRPC authentication interceptor for Spark Connect
-          - KBase token validation before session creation
-          - Custom ChannelBuilder with KBase auth headers
-          - Async and sync KBase auth client"
+          - Zero-Configuration KBase Authentication
+          - Secure TLS Integration with BERDL Ingress
+          - Client-Side Token Validation
+          - Standard PySpark Session Interface"
           fi
 
           gh release create "${{ steps.version.outputs.tag_name }}" \
