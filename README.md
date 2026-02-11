@@ -50,9 +50,6 @@ To connect to your personal Spark cluster running on BERDL JupyterHub from a loc
 
    # Connect via the public proxy (routes to your personal cluster)
    spark = create_spark_session(
-       host_template="spark.berdl.kbase.us",
-       port=443,
-       use_ssl=True,
        kbase_token="PASTE_YOUR_TOKEN_HERE",
    )
 
