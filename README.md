@@ -9,6 +9,7 @@ This library provides helpers for authenticating Spark Connect sessions using KB
 
 ## Installation
 
+```bash
 # Install directly from GitHub
 pip install "git+https://github.com/BERDataLakehouse/spark_connect_remote.git"
 
@@ -19,6 +20,7 @@ uv pip install "git+https://github.com/BERDataLakehouse/spark_connect_remote.git
 git clone https://github.com/BERDataLakehouse/spark_connect_remote.git
 cd spark_connect_remote
 uv sync --dev
+```
 
 ### via pyproject.toml
 
