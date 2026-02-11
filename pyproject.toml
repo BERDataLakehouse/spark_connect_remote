@@ -5,7 +5,7 @@ description = "Remote connection helpers for Apache Spark Connect with KBase aut
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.13"
-authors = [{ name = "BERDL Team" }]
+authors = [{ name = "KBase BERDL Team" }]
 keywords = ["spark", "spark-connect", "kbase", "authentication", "grpc"]
 classifiers = [
     "Development Status :: 4 - Beta",
